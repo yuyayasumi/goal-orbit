@@ -1,0 +1,370 @@
+// ==========================================
+// Orbit v3 - 多言語対応 (i18n)
+// ==========================================
+
+const LANG_KEY = 'orbit_language';
+
+const translations = {
+  ja: {
+    // Sidebar
+    'sidebar.menu': 'メニュー',
+    'sidebar.areas': 'Areas',
+    'sidebar.other': 'その他',
+    'sidebar.dashboard': 'ダッシュボード',
+    'sidebar.monthlyReview': '月次振り返り',
+    'sidebar.archives': 'アーカイブ',
+    'sidebar.export': 'エクスポート',
+    'sidebar.import': 'インポート',
+    'sidebar.addArea': 'Areaを追加',
+
+    // Categories
+    'cat.routines': 'Routines',
+    'cat.projects': 'Projects',
+    'cat.resources': 'Resources',
+    'cat.routines.desc': '繰り返し行う習慣や日課',
+    'cat.projects.desc': '明確なゴールと期限を持つ取り組み',
+    'cat.resources.desc': '継続的に蓄積・参照するリソース',
+
+    // Dashboard
+    'dashboard.title': 'ダッシュボード',
+    'dashboard.subtitle': '全Areaの目標を一目で確認',
+    'dashboard.total': '合計',
+    'dashboard.archivedCount': 'アーカイブ済み: {0}件',
+    'dashboard.byStatus': 'ステータス別',
+    'dashboard.byPriority': '優先度別',
+    'dashboard.recent': '最近更新された目標',
+    'dashboard.dueSoon': '期限間近の目標',
+    'dashboard.noGoals': '目標がまだありません',
+    'dashboard.noGoalsSub': 'Areaを作成して目標を追加しましょう',
+    'dashboard.overdue': '期限超過',
+    'dashboard.daysLeft': 'あと{0}日',
+    'dashboard.dueToday': '本日期限',
+    'dashboard.archived': 'アーカイブ済み',
+    'dashboard.noDueSoon': '期限間近の目標はありません',
+    'dashboard.r': 'R',
+    'dashboard.p': 'P',
+    'dashboard.res': 'Rs',
+    'dashboard.colGoalArea': '目標 / エリア',
+    'dashboard.colFrequency': '頻度',
+    'dashboard.colDueDate': '期限日',
+    'dashboard.colProgress': '進捗',
+    'dashboard.colStatus': 'ステータス',
+    'dashboard.colPriority': '優先度',
+    'dashboard.sortLabel': 'ソート:',
+    'dashboard.sortArea': 'Area順',
+    'dashboard.sortFrequency': '頻度順',
+    'dashboard.sortProgress': '進捗順',
+
+    // Area
+    'area.addGoal': '目標を追加',
+    'area.editArea': 'Area編集',
+    'area.deleteArea': 'Area削除',
+    'area.confirmDeleteArea': '「{0}」を削除しますか？このAreaに属する目標もすべて削除されます。',
+    'area.filter': 'フィルター:',
+    'area.viewGrid': 'ギャラリービュー',
+    'area.viewList': 'リストビュー',
+    'area.all': 'すべて',
+    'area.sortUpdated': '更新日順',
+    'area.sortCreated': '作成日順',
+    'area.sortPriority': '優先度順',
+    'area.sortName': '名前順',
+    'area.sortDueDate': '期限順',
+    'area.noGoals': 'まだ目標がありません',
+    'area.noGoalsFiltered': '該当する目標がありません',
+    'area.noGoalsSub': '「目標を追加」ボタンから新しい目標を作成しましょう',
+    'area.confirmArchive': '「{0}」をアーカイブしますか？',
+    'area.confirmDelete': '「{0}」を削除しますか？この操作は取り消せません。',
+
+    // Area Modal
+    'areaModal.addTitle': 'Areaを追加',
+    'areaModal.editTitle': 'Areaを編集',
+    'areaModal.name': 'Area名',
+    'areaModal.namePlaceholder': '例: 健康管理、キャリア、家計',
+    'areaModal.description': '説明',
+    'areaModal.descPlaceholder': 'このAreaの説明（省略可）',
+    'areaModal.startDate': '開始日',
+    'areaModal.completedDate': '完了日',
+    'areaModal.color': 'カラー',
+    'areaModal.icon': 'アイコン',
+    'areaModal.cancel': 'キャンセル',
+    'areaModal.add': '追加',
+    'areaModal.update': '更新',
+
+    // Goal Modal
+    'modal.addTitle': '目標を追加',
+    'modal.editTitle': '目標を編集',
+    'modal.title': 'タイトル',
+    'modal.titlePlaceholder': '目標のタイトルを入力',
+    'modal.description': '説明',
+    'modal.descPlaceholder': '説明を入力（省略可）',
+    'modal.area': 'Area',
+    'modal.category': 'カテゴリ',
+    'modal.status': 'ステータス',
+    'modal.priority': '優先度',
+    'modal.startDate': '開始日',
+    'modal.completedDate': '完了日',
+    'modal.dueDate': '期限日',
+    'modal.frequency': '頻度',
+    'modal.frequencyCustomPlaceholder': '例: 週3回、隔週など',
+    'modal.subtasks': 'サブタスク',
+    'modal.addSubtask': 'サブタスクを追加',
+    'modal.subtaskPlaceholder': 'サブタスク内容を入力',
+    'modal.cancel': 'キャンセル',
+    'modal.add': '追加',
+    'modal.update': '更新',
+
+    // Status
+    'status.active': 'アクティブ',
+    'status.onHold': '保留中',
+    'status.completed': '完了',
+
+    // Priority
+    'priority.high': '高',
+    'priority.medium': '中',
+    'priority.low': '低',
+
+    // Frequency
+    'frequency.daily': '毎日',
+    'frequency.weekly': '毎週',
+    'frequency.monthly': '毎月',
+    'frequency.custom': 'カスタム',
+
+    // Monthly Review
+    'review.title': '月次振り返り',
+    'review.subtitle': '毎月の振り返りを記録して成長を可視化',
+    'review.selectMonth': '振り返り月を選択',
+    'review.reviewOf': '{0}の振り返り',
+    'review.overallReview': '全体の振り返り',
+    'review.overallPlaceholder': '今月全体を通しての振り返り、次月への抱負など...',
+    'review.areaPlaceholder': '{0}に関する振り返りを記入...',
+    'review.save': '振り返りを保存',
+    'review.saved': '振り返りを保存しました',
+    'review.pastReviews': '過去の振り返り',
+    'review.noReviews': 'まだ振り返りがありません',
+    'review.written': '記入済み',
+    'review.notWritten': '未記入',
+
+    // Archives
+    'archives.title': 'アーカイブ',
+    'archives.subtitle': '完了した目標の一覧',
+    'archives.areaFilter': 'Area:',
+    'archives.noArchives': 'アーカイブされた目標はありません',
+    'archives.noArchivesSub': '完了した目標をアーカイブするとここに表示されます',
+    'archives.restore': '復元',
+    'archives.permanentDelete': '完全に削除',
+    'archives.confirmDelete': '「{0}」を完全に削除しますか？',
+
+    // Export/Import
+    'export.success': 'データをエクスポートしました',
+    'import.confirm': 'インポートすると現在のデータが上書きされます。続行しますか？',
+    'import.success': 'データをインポートしました',
+    'import.error': 'インポートに失敗しました。ファイル形式を確認してください。',
+
+    // Subtasks
+    'subtasks.progress': '{0}/{1} 完了',
+
+    // Common
+    'common.edit': '編集',
+    'common.archive': 'アーカイブ',
+    'common.delete': '削除',
+    'common.noAreas': 'Areaがまだありません',
+    'common.noAreasSub': 'サイドバーの「+」ボタンからAreaを追加しましょう',
+
+    // Month
+    'month.format': '{0}年{1}月',
+  },
+
+  en: {
+    'sidebar.menu': 'Menu',
+    'sidebar.areas': 'Areas',
+    'sidebar.other': 'Others',
+    'sidebar.dashboard': 'Dashboard',
+    'sidebar.monthlyReview': 'Monthly Review',
+    'sidebar.archives': 'Archives',
+    'sidebar.export': 'Export',
+    'sidebar.import': 'Import',
+    'sidebar.addArea': 'Add Area',
+
+    'cat.routines': 'Routines',
+    'cat.projects': 'Projects',
+    'cat.resources': 'Resources',
+    'cat.routines.desc': 'Recurring habits and daily routines',
+    'cat.projects.desc': 'Goals with clear deadlines and deliverables',
+    'cat.resources.desc': 'Ongoing resources to maintain and grow',
+
+    'dashboard.title': 'Dashboard',
+    'dashboard.subtitle': 'Overview of all your Areas and goals',
+    'dashboard.total': 'Total',
+    'dashboard.archivedCount': 'Archived: {0}',
+    'dashboard.byStatus': 'By Status',
+    'dashboard.byPriority': 'By Priority',
+    'dashboard.recent': 'Recently Updated',
+    'dashboard.dueSoon': 'Due Soon',
+    'dashboard.noGoals': 'No goals yet',
+    'dashboard.noGoalsSub': 'Create an Area and add goals to get started',
+    'dashboard.overdue': 'Overdue',
+    'dashboard.daysLeft': '{0} days left',
+    'dashboard.dueToday': 'Due today',
+    'dashboard.archived': 'Archived',
+    'dashboard.noDueSoon': 'No goals due soon',
+    'dashboard.r': 'R',
+    'dashboard.p': 'P',
+    'dashboard.res': 'Rs',
+    'dashboard.colGoalArea': 'Goal / Area',
+    'dashboard.colFrequency': 'Frequency',
+    'dashboard.colDueDate': 'Due Date',
+    'dashboard.colProgress': 'Progress',
+    'dashboard.colStatus': 'Status',
+    'dashboard.colPriority': 'Priority',
+    'dashboard.sortLabel': 'Sort:',
+    'dashboard.sortArea': 'By Area',
+    'dashboard.sortFrequency': 'By Frequency',
+    'dashboard.sortProgress': 'By Progress',
+
+    'area.addGoal': 'Add Goal',
+    'area.editArea': 'Edit Area',
+    'area.deleteArea': 'Delete Area',
+    'area.confirmDeleteArea': 'Delete "{0}"? All goals in this Area will also be deleted.',
+    'area.filter': 'Filter:',
+    'area.viewGrid': 'Gallery View',
+    'area.viewList': 'List View',
+    'area.all': 'All',
+    'area.sortUpdated': 'Last Updated',
+    'area.sortCreated': 'Date Created',
+    'area.sortPriority': 'Priority',
+    'area.sortName': 'Name',
+    'area.sortDueDate': 'Due Date',
+    'area.noGoals': 'No goals yet',
+    'area.noGoalsFiltered': 'No matching goals',
+    'area.noGoalsSub': 'Click "Add Goal" to create a new goal',
+    'area.confirmArchive': 'Archive "{0}"?',
+    'area.confirmDelete': 'Delete "{0}"? This action cannot be undone.',
+
+    'areaModal.addTitle': 'Add Area',
+    'areaModal.editTitle': 'Edit Area',
+    'areaModal.name': 'Area Name',
+    'areaModal.namePlaceholder': 'e.g. Health, Career, Finance',
+    'areaModal.description': 'Description',
+    'areaModal.descPlaceholder': 'Description for this Area (optional)',
+    'areaModal.startDate': 'Start Date',
+    'areaModal.completedDate': 'Completed Date',
+    'areaModal.color': 'Color',
+    'areaModal.icon': 'Icon',
+    'areaModal.cancel': 'Cancel',
+    'areaModal.add': 'Add',
+    'areaModal.update': 'Update',
+
+    'modal.addTitle': 'Add Goal',
+    'modal.editTitle': 'Edit Goal',
+    'modal.title': 'Title',
+    'modal.titlePlaceholder': 'Enter goal title',
+    'modal.description': 'Description',
+    'modal.descPlaceholder': 'Enter description (optional)',
+    'modal.area': 'Area',
+    'modal.category': 'Category',
+    'modal.status': 'Status',
+    'modal.priority': 'Priority',
+    'modal.startDate': 'Start Date',
+    'modal.completedDate': 'Completed Date',
+    'modal.dueDate': 'Due Date',
+    'modal.frequency': 'Frequency',
+    'modal.frequencyCustomPlaceholder': 'e.g. 3 times a week',
+    'modal.subtasks': 'Subtasks',
+    'modal.addSubtask': 'Add Subtask',
+    'modal.subtaskPlaceholder': 'Enter subtask',
+    'modal.cancel': 'Cancel',
+    'modal.add': 'Add',
+    'modal.update': 'Update',
+
+    'status.active': 'Active',
+    'status.onHold': 'On Hold',
+    'status.completed': 'Completed',
+
+    'priority.high': 'High',
+    'priority.medium': 'Medium',
+    'priority.low': 'Low',
+
+    'frequency.daily': 'Daily',
+    'frequency.weekly': 'Weekly',
+    'frequency.monthly': 'Monthly',
+    'frequency.custom': 'Custom',
+
+    'review.title': 'Monthly Review',
+    'review.subtitle': 'Record your reflections to visualize growth',
+    'review.selectMonth': 'Select month',
+    'review.reviewOf': 'Review for {0}',
+    'review.overallReview': 'Overall Review',
+    'review.overallPlaceholder': 'Overall reflections, goals for next month...',
+    'review.areaPlaceholder': 'Write your reflections on {0}...',
+    'review.save': 'Save Review',
+    'review.saved': 'Review saved',
+    'review.pastReviews': 'Past Reviews',
+    'review.noReviews': 'No reviews yet',
+    'review.written': 'Written',
+    'review.notWritten': 'Not written',
+
+    'archives.title': 'Archives',
+    'archives.subtitle': 'Completed goals',
+    'archives.areaFilter': 'Area:',
+    'archives.noArchives': 'No archived goals',
+    'archives.noArchivesSub': 'Archived goals will appear here',
+    'archives.restore': 'Restore',
+    'archives.permanentDelete': 'Delete permanently',
+    'archives.confirmDelete': 'Permanently delete "{0}"?',
+
+    'export.success': 'Data exported successfully',
+    'import.confirm': 'Importing will overwrite current data. Continue?',
+    'import.success': 'Data imported successfully',
+    'import.error': 'Import failed. Please check the file format.',
+
+    'subtasks.progress': '{0}/{1} done',
+
+    'common.edit': 'Edit',
+    'common.archive': 'Archive',
+    'common.delete': 'Delete',
+    'common.noAreas': 'No Areas yet',
+    'common.noAreasSub': 'Click "+" in the sidebar to add an Area',
+
+    'month.format': '{1}/{0}',
+  }
+};
+
+let currentLang = localStorage.getItem(LANG_KEY) || 'ja';
+
+export function t(key, ...args) {
+  const dict = translations[currentLang] || translations.ja;
+  let text = dict[key] || translations.ja[key] || key;
+  args.forEach((arg, i) => {
+    text = text.replace(`{${i}}`, arg);
+  });
+  return text;
+}
+
+export function getLang() { return currentLang; }
+
+export function setLang(lang) {
+  currentLang = lang;
+  localStorage.setItem(LANG_KEY, lang);
+}
+
+export function toggleLang() {
+  setLang(currentLang === 'ja' ? 'en' : 'ja');
+  return currentLang;
+}
+
+export function formatYearMonthI18n(yearMonth) {
+  const [y, m] = yearMonth.split('-');
+  return t('month.format', y, parseInt(m));
+}
+
+export function getYearMonthOptionsI18n() {
+  const options = [];
+  const now = new Date();
+  for (let i = 0; i <= 12; i++) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    const value = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+    const label = t('month.format', d.getFullYear(), d.getMonth() + 1);
+    options.push({ value, label });
+  }
+  return options;
+}
