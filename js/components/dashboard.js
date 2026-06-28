@@ -807,19 +807,25 @@ function updateDragAutoScroll() {
     return;
   }
 
-  const viewportHeight = window.innerHeight || document.documentElement.clientHeight || 0;
+  const scrollContainer = document.getElementById('main-content');
+  if (!scrollContainer) {
+    activeWidgetDrag.scrollFrame = requestAnimationFrame(updateDragAutoScroll);
+    return;
+  }
+
+  const containerRect = scrollContainer.getBoundingClientRect();
   let scrollDelta = 0;
 
-  if (pointerY < DRAG_SCROLL_EDGE_PX) {
-    const ratio = (DRAG_SCROLL_EDGE_PX - pointerY) / DRAG_SCROLL_EDGE_PX;
+  if (pointerY < containerRect.top + DRAG_SCROLL_EDGE_PX) {
+    const ratio = ((containerRect.top + DRAG_SCROLL_EDGE_PX) - pointerY) / DRAG_SCROLL_EDGE_PX;
     scrollDelta = -Math.max(4, Math.round(DRAG_SCROLL_MAX_STEP * ratio));
-  } else if (pointerY > viewportHeight - DRAG_SCROLL_EDGE_PX) {
-    const ratio = (pointerY - (viewportHeight - DRAG_SCROLL_EDGE_PX)) / DRAG_SCROLL_EDGE_PX;
+  } else if (pointerY > containerRect.bottom - DRAG_SCROLL_EDGE_PX) {
+    const ratio = (pointerY - (containerRect.bottom - DRAG_SCROLL_EDGE_PX)) / DRAG_SCROLL_EDGE_PX;
     scrollDelta = Math.max(4, Math.round(DRAG_SCROLL_MAX_STEP * ratio));
   }
 
   if (scrollDelta !== 0) {
-    window.scrollBy(0, scrollDelta);
+    scrollContainer.scrollBy(0, scrollDelta);
   }
 
   activeWidgetDrag.scrollFrame = requestAnimationFrame(updateDragAutoScroll);
