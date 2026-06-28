@@ -106,104 +106,75 @@ export const AREA_ICONS = [
   'shield', 'star', 'book', 'music', 'code'
 ];
 
-export function createDatePicker(initialValue, onChange) {
-  let currentYear = '';
-  let currentMonth = '';
-  let currentDay = '';
+function parseCompactDate(rawValue) {
+  const digits = (rawValue || '').replace(/\D/g, '').slice(0, 8);
+  if (digits.length !== 8) return null;
 
-  if (initialValue) {
-    const parts = initialValue.split('-');
-    currentYear = parts[0] || '';
-    currentMonth = parts[1] ? String(parseInt(parts[1], 10)) : '';
-    currentDay = parts[2] ? String(parseInt(parts[2], 10)) : '';
-  }
+  const year = Number(digits.slice(0, 4));
+  const month = Number(digits.slice(4, 6));
+  const day = Number(digits.slice(6, 8));
+  if (month < 1 || month > 12 || day < 1 || day > 31) return null;
 
-  const container = el('div', {
-    className: 'date-picker-dropdowns',
-    style: 'display:flex; align-items:stretch; gap:8px; width:100%;'
-  });
-
-  const yearSelect = el('select', {
-    className: 'form-input date-select date-select-year',
-    'aria-label': 'Year'
-  });
-  yearSelect.appendChild(el('option', { value: '' }, 'YYYY'));
-
-  const thisYear = new Date().getFullYear();
-  for (let y = thisYear - 5; y <= thisYear + 5; y++) {
-    const opt = el('option', { value: String(y) }, `${y}`);
-    if (String(y) === currentYear) opt.selected = true;
-    yearSelect.appendChild(opt);
-  }
-
-  const monthSelect = el('select', {
-    className: 'form-input date-select date-select-month',
-    'aria-label': 'Month'
-  });
-  monthSelect.appendChild(el('option', { value: '' }, 'MM'));
-  for (let m = 1; m <= 12; m++) {
-    const opt = el('option', { value: String(m) }, String(m).padStart(2, '0'));
-    if (String(m) === currentMonth) opt.selected = true;
-    monthSelect.appendChild(opt);
-  }
-
-  const daySelect = el('select', {
-    className: 'form-input date-select date-select-day',
-    'aria-label': 'Day'
-  });
-
-  function populateDays() {
-    const prevDay = daySelect.value;
-    daySelect.innerHTML = '';
-    daySelect.appendChild(el('option', { value: '' }, 'DD'));
-    const y = parseInt(yearSelect.value, 10) || thisYear;
-    const m = parseInt(monthSelect.value, 10) || 1;
-    const daysInMonth = new Date(y, m, 0).getDate();
-    for (let d = 1; d <= daysInMonth; d++) {
-      const opt = el('option', { value: String(d) }, String(d).padStart(2, '0'));
-      if (String(d) === prevDay || String(d) === currentDay) opt.selected = true;
-      daySelect.appendChild(opt);
-    }
-    if (prevDay && parseInt(prevDay, 10) > daysInMonth) {
-      daySelect.value = '';
-    }
-  }
-  populateDays();
-
-  function emitChange() {
-    const y = yearSelect.value;
-    const m = monthSelect.value;
-    const d = daySelect.value;
-    if (y && m && d) {
-      onChange?.(`${y}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`);
-      return;
-    }
-    onChange?.(null);
-  }
-
-  yearSelect.addEventListener('change', () => {
-    populateDays();
-    emitChange();
-  });
-  monthSelect.addEventListener('change', () => {
-    populateDays();
-    emitChange();
-  });
-  daySelect.addEventListener('change', emitChange);
-
-  container.appendChild(yearSelect);
-  container.appendChild(monthSelect);
-  container.appendChild(daySelect);
-
-  container.getValue = () => {
-    const y = yearSelect.value;
-    const m = monthSelect.value;
-    const d = daySelect.value;
-    if (y && m && d) {
-      return `${y}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
-    }
+  const date = new Date(year, month - 1, day);
+  if (
+    date.getFullYear() !== year ||
+    date.getMonth() !== month - 1 ||
+    date.getDate() !== day
+  ) {
     return null;
-  };
+  }
 
-  return container;
+  return `${digits.slice(0, 4)}-${digits.slice(4, 6)}-${digits.slice(6, 8)}`;
+}
+
+function formatCompactDateDisplay(rawValue) {
+  const digits = (rawValue || '').replace(/\D/g, '').slice(0, 8);
+  if (digits.length <= 4) return digits;
+  if (digits.length <= 6) return `${digits.slice(0, 4)}/${digits.slice(4)}`;
+  return `${digits.slice(0, 4)}/${digits.slice(4, 6)}/${digits.slice(6, 8)}`;
+}
+
+export function normalizeDateInput(rawValue) {
+  if (!rawValue) return null;
+  const digits = String(rawValue).replace(/\D/g, '');
+  return parseCompactDate(digits);
+}
+
+export function registerEscapeClose(closeHandler) {
+  const onKeydown = (event) => {
+    if (event.key === 'Escape') {
+      event.preventDefault();
+      closeHandler();
+    }
+  };
+  document.addEventListener('keydown', onKeydown);
+  return () => document.removeEventListener('keydown', onKeydown);
+}
+
+export function createDatePicker(initialValue, onChange) {
+  const compactValue = initialValue ? initialValue.replaceAll('-', '') : '';
+  const input = el('input', {
+    type: 'text',
+    className: 'form-input form-date-input',
+    value: formatCompactDateDisplay(compactValue),
+    maxLength: '10',
+    inputMode: 'numeric',
+    placeholder: 'YYYY/MM/DD',
+    autocomplete: 'off',
+    onInput: (event) => {
+      const sanitized = event.target.value.replace(/\D/g, '').slice(0, 8);
+      event.target.value = formatCompactDateDisplay(sanitized);
+      const parsed = parseCompactDate(sanitized);
+      event.target.setCustomValidity(sanitized && !parsed ? 'YYYY/MM/DDで入力してください' : '');
+      onChange?.(parsed);
+    },
+    onBlur: (event) => {
+      const parsed = parseCompactDate(event.target.value);
+      event.target.value = formatCompactDateDisplay(event.target.value);
+      event.target.setCustomValidity(event.target.value && !parsed ? 'YYYY/MM/DDで入力してください' : '');
+    }
+  });
+
+  input.getValue = () => parseCompactDate(input.value);
+  return input;
 }

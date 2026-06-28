@@ -5,7 +5,7 @@
 import { renderSidebar } from './components/sidebar.js';
 import { renderDashboard } from './components/dashboard.js';
 import { renderAreaPage } from './components/area-page.js';
-import { renderMonthlyReview } from './components/monthly-review.js';
+import { renderMonthlyReview, flushMonthlyReviewAutosave } from './components/monthly-review.js';
 import { renderArchives } from './components/archives.js';
 import { openSyncConflictModal } from './components/sync-conflict-modal.js';
 import { migrateIfNeeded, getFullData, restoreFullData, getLastModified, initializeSampleDataIfNeeded, hasLocalUserChanges, markDataSynced, saveRecoveryBackup } from './store.js';
@@ -22,9 +22,16 @@ const sidebarEl = document.getElementById('sidebar');
 const mainContentEl = document.getElementById('main-content');
 
 function navigateTo(page) {
+  flushPendingPageState();
   currentPage = page;
   renderSidebar(sidebarEl, currentPage, navigateTo);
   renderPage();
+}
+
+function flushPendingPageState() {
+  if (currentPage === 'monthly-review') {
+    flushMonthlyReviewAutosave();
+  }
 }
 
 export function triggerSidebarRender() {
@@ -106,13 +113,28 @@ async function performStartupSync() {
   }
 }
 
-window.addEventListener('orbitDataChanged', () => {
+window.addEventListener('orbitDataChanged', async (event) => {
   if (!isDriveAuthorized() || !syncReady) return;
-  
+
   appState.syncStatus = 'syncing';
   triggerSidebarRender();
 
   clearTimeout(syncDebounceTimer);
+
+  if (event?.detail?.immediateSync) {
+    try {
+      const localData = getFullData();
+      const uploaded = await uploadBackup(localData);
+      if (!uploaded) throw new Error('DRIVE_BACKUP_UPLOAD_FAILED');
+      markDataSynced(localData.lastModified);
+    } catch (err) {
+      console.error(err);
+      appState.syncStatus = 'error';
+      triggerSidebarRender();
+    }
+    return;
+  }
+
   syncDebounceTimer = setTimeout(async () => {
     try {
       const localData = getFullData();
@@ -181,6 +203,9 @@ document.addEventListener('DOMContentLoaded', () => {
       document.querySelector('.app-layout').classList.remove('sidebar-collapsed');
     });
   }
+
+  window.addEventListener('beforeunload', flushPendingPageState);
+  window.addEventListener('pagehide', flushPendingPageState);
 
   navigateTo('dashboard');
 });

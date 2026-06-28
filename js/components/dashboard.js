@@ -2,7 +2,7 @@
 // Orbit v3.3 - ダッシュボードコンポーネント
 // ==========================================
 
-import { el, clearElement, STATUS_CONFIG, PRIORITY_CONFIG, formatDate, getSubtaskProgress } from '../utils.js';
+import { el, clearElement, STATUS_CONFIG, PRIORITY_CONFIG, formatDate, getSubtaskProgress, normalizeDateInput } from '../utils.js';
 import { t } from '../i18n.js';
 import { getStats, getDueSoonGoals, getActiveAreas, getAreaById, getActiveGoals, getAllGoals, updateGoal, toggleSubtask, getDashboardLayout, saveDashboardLayout } from '../store.js';
 import { openGoalModal } from './goal-modal.js';
@@ -17,6 +17,39 @@ let projectsSortOrder = 'asc';
 let routinesStatusFilter = ['active', 'on-hold'];
 let projectsStatusFilter = ['active', 'on-hold'];
 let activeWidgetDrag = null;
+
+function requestCompletedDate(currentValue = '') {
+  const input = prompt('完了日を YYYY/MM/DD で入力してください。', currentValue ? formatDate(currentValue) : '');
+  if (input === null) return null;
+  const normalized = normalizeDateInput(input);
+  if (!normalized) {
+    alert('完了日は YYYY/MM/DD で入力してください。');
+    return undefined;
+  }
+  return normalized;
+}
+
+function createInlineDateEditor(goal, field, onSaved, options = {}) {
+  const input = el('input', {
+    type: 'text',
+    value: goal[field] ? formatDate(goal[field]) : '',
+    className: 'inline-edit-date',
+    placeholder: options.placeholder || 'YYYY/MM/DD',
+    onChange: (e) => {
+      e.stopPropagation();
+      const normalized = normalizeDateInput(e.target.value);
+      if (e.target.value && !normalized) {
+        alert('日付は YYYY/MM/DD で入力してください。');
+        e.target.value = goal[field] ? formatDate(goal[field]) : '';
+        return;
+      }
+      updateGoal(goal.id, { [field]: normalized });
+      onSaved();
+    },
+    onClick: (e) => e.stopPropagation()
+  });
+  return input;
+}
 
 function loadDashboardSettings() {
   try {
@@ -290,6 +323,8 @@ export function renderDashboard(container, onNavigate) {
     const listHeader = el('div', { className: 'compact-list-header' },
       el('span', { className: 'header-col-title' }, t('dashboard.colGoalArea')),
       el('span', { className: 'header-col-freq' }, t('dashboard.colFrequency')),
+      el('span', { className: 'header-col-start' }, '開始日'),
+      el('span', { className: 'header-col-end' }, '完了日'),
       el('span', { className: 'header-col-status' }, t('dashboard.colStatus')),
       el('span', { className: 'header-col-priority' }, t('dashboard.colPriority'))
     );
@@ -310,7 +345,19 @@ export function renderDashboard(container, onNavigate) {
         style: `color: ${statusConf.color}; border-color: ${statusConf.color}; justify-self: start; background: transparent; cursor: pointer; border-radius: 20px; outline: none; appearance: none; -webkit-appearance: none; text-align: center; text-align-last: center;`,
         onChange: (e) => {
           e.stopPropagation();
-          updateGoal(goal.id, { status: e.target.value });
+          const nextStatus = e.target.value;
+          if (nextStatus === 'completed' && !goal.completedDate) {
+            const completedDate = requestCompletedDate(goal.completedDate);
+            if (completedDate === undefined || completedDate === null) {
+              e.target.value = goal.status;
+              return;
+            }
+            updateGoal(goal.id, { status: nextStatus, completedDate });
+          } else if (nextStatus !== 'completed' && goal.completedDate) {
+            updateGoal(goal.id, { status: nextStatus, completedDate: null });
+          } else {
+            updateGoal(goal.id, { status: nextStatus });
+          }
           renderDashboard(container, onNavigate);
         },
         onClick: (e) => e.stopPropagation()
@@ -370,6 +417,8 @@ export function renderDashboard(container, onNavigate) {
           el('span', { className: 'compact-item-meta' }, areaName)
         ),
         frequencySelect,
+        createInlineDateEditor(goal, 'startDate', () => renderDashboard(container, onNavigate)),
+        createInlineDateEditor(goal, 'completedDate', () => renderDashboard(container, onNavigate)),
         statusSelect,
         prioritySelect
       );
@@ -444,6 +493,8 @@ export function renderDashboard(container, onNavigate) {
     // 見出し（インデックス）行の追加
     const listHeader = el('div', { className: 'compact-list-header' },
       el('span', { className: 'header-col-title' }, t('dashboard.colGoalArea')),
+      el('span', { className: 'header-col-start' }, '開始日'),
+      el('span', { className: 'header-col-end' }, '完了日'),
       el('span', { className: 'header-col-due' }, t('dashboard.colDueDate')),
       el('span', { className: 'header-col-progress' }, t('dashboard.colProgress')),
       el('span', { className: 'header-col-status' }, t('dashboard.colStatus')),
@@ -484,7 +535,19 @@ export function renderDashboard(container, onNavigate) {
         style: `color: ${statusConf.color}; border-color: ${statusConf.color}; justify-self: start; background: transparent; cursor: pointer; border-radius: 20px; outline: none; appearance: none; -webkit-appearance: none; text-align: center; text-align-last: center;`,
         onChange: (e) => {
           e.stopPropagation();
-          updateGoal(goal.id, { status: e.target.value });
+          const nextStatus = e.target.value;
+          if (nextStatus === 'completed' && !goal.completedDate) {
+            const completedDate = requestCompletedDate(goal.completedDate);
+            if (completedDate === undefined || completedDate === null) {
+              e.target.value = goal.status;
+              return;
+            }
+            updateGoal(goal.id, { status: nextStatus, completedDate });
+          } else if (nextStatus !== 'completed' && goal.completedDate) {
+            updateGoal(goal.id, { status: nextStatus, completedDate: null });
+          } else {
+            updateGoal(goal.id, { status: nextStatus });
+          }
           renderDashboard(container, onNavigate);
         },
         onClick: (e) => e.stopPropagation()
@@ -519,6 +582,8 @@ export function renderDashboard(container, onNavigate) {
           el('span', { className: 'compact-item-title' }, goal.title),
           el('span', { className: 'compact-item-meta' }, areaName)
         ),
+        createInlineDateEditor(goal, 'startDate', () => renderDashboard(container, onNavigate)),
+        createInlineDateEditor(goal, 'completedDate', () => renderDashboard(container, onNavigate)),
         dueInput,
         progressEl,
         statusSelect,

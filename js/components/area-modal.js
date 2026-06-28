@@ -2,11 +2,12 @@
 // Orbit - Area追加/編集モーダルコンポーネント
 // ==========================================
 
-import { el, AREA_COLORS, AREA_ICONS, createDatePicker } from '../utils.js';
+import { el, AREA_COLORS, AREA_ICONS, createDatePicker, registerEscapeClose } from '../utils.js';
 import { t } from '../i18n.js';
 import { addArea, updateArea, getAreaById, canAddArea } from '../store.js';
 
 let modalOverlay = null;
+let removeEscapeClose = null;
 
 export function openAreaModal(areaId = null, onSave = null) {
   if (!areaId && !canAddArea()) {
@@ -130,6 +131,7 @@ export function openAreaModal(areaId = null, onSave = null) {
   modal.appendChild(form);
   modalOverlay.appendChild(modal);
   document.body.appendChild(modalOverlay);
+  removeEscapeClose = registerEscapeClose(closeAreaModal);
 
   requestAnimationFrame(() => {
     modalOverlay.classList.add('active');
@@ -142,6 +144,8 @@ export function openAreaModal(areaId = null, onSave = null) {
 
 export function closeAreaModal() {
   if (modalOverlay) {
+    removeEscapeClose?.();
+    removeEscapeClose = null;
     modalOverlay.classList.remove('active');
     const modal = modalOverlay.querySelector('.modal');
     if (modal) modal.classList.remove('active');

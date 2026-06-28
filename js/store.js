@@ -24,11 +24,13 @@ function loadData(key) {
   } catch { return []; }
 }
 
-function saveData(key, data, { userChange = true } = {}) {
+function saveData(key, data, { userChange = true, immediateSync = false } = {}) {
   localStorage.setItem(key, JSON.stringify(data));
   localStorage.setItem(LAST_MODIFIED_KEY, Date.now().toString());
   if (userChange) localStorage.setItem(LOCAL_USER_CHANGES_KEY, 'true');
-  window.dispatchEvent(new Event('orbitDataChanged'));
+  window.dispatchEvent(new CustomEvent('orbitDataChanged', {
+    detail: { immediateSync }
+  }));
 }
 
 export function getLastModified() {
@@ -203,7 +205,7 @@ export function addArea({ name, description = '', color, icon, startDate = null,
     updatedAt: now
   };
   areas.push(area);
-  saveData(AREAS_KEY, areas);
+  saveData(AREAS_KEY, areas, { immediateSync: true });
   return area;
 }
 
@@ -286,7 +288,7 @@ export function addGoal({ title, description, areaId, category, status = 'active
     updatedAt: now
   };
   goals.push(goal);
-  saveData(GOALS_KEY, goals);
+  saveData(GOALS_KEY, goals, { immediateSync: true });
   return goal;
 }
 

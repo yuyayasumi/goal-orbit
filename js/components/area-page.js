@@ -2,11 +2,24 @@
 // Orbit v3.1 - Area別ページコンポーネント
 // ==========================================
 
-import { el, clearElement, STATUS_CONFIG, PRIORITY_CONFIG, FREQUENCY_CONFIG, formatDate, getDaysUntilDue, getSubtaskProgress, CATEGORY_CONFIG } from '../utils.js';
+import { el, clearElement, STATUS_CONFIG, PRIORITY_CONFIG, FREQUENCY_CONFIG, formatDate, getDaysUntilDue, getSubtaskProgress, CATEGORY_CONFIG, normalizeDateInput } from '../utils.js';
 import { t } from '../i18n.js';
 import { getAreaById, getGoalsByAreaAndCategory, deleteGoal, archiveGoal, toggleSubtask, deleteArea, updateGoal } from '../store.js';
 import { openGoalModal } from './goal-modal.js';
 import { openAreaModal } from './area-modal.js';
+
+function requestCompletedDate(currentValue = '') {
+  const input = prompt('完了日を YYYY/MM/DD で入力してください。', currentValue ? formatDate(currentValue) : '');
+  if (input === null) return null;
+
+  const normalized = normalizeDateInput(input);
+  if (!normalized) {
+    alert('完了日は YYYY/MM/DD で入力してください。');
+    return undefined;
+  }
+
+  return normalized;
+}
 
 export function renderAreaPage(container, areaId, onNavigate, onRefresh) {
   clearElement(container);
@@ -225,7 +238,7 @@ export function renderAreaPage(container, areaId, onNavigate, onRefresh) {
     const currentLayout = localStorage.getItem('orbit_view_layout') || 'grid';
     contentArea.className = currentLayout === 'grid' ? 'goals-grid' : 'goals-list-view';
 
-    const goals = getGoalsByAreaAndCategory(area.id, currentTab, false);
+    const goals = getGoalsByAreaAndCategory(area.id, currentTab, true);
     let filtered = [...goals];
 
     if (currentFilter !== 'all') {
@@ -289,7 +302,19 @@ function createGoalCard(goal, area, index, onRefresh) {
         style: `color: ${statusConf.color}; border-color: ${statusConf.color}; justify-self: start; background: transparent; cursor: pointer; border-radius: 20px; outline: none; appearance: none; -webkit-appearance: none; text-align: center; text-align-last: center;`,
         onChange: (e) => {
           e.stopPropagation();
-          updateGoal(goal.id, { status: e.target.value });
+          const nextStatus = e.target.value;
+          if (nextStatus === 'completed' && !goal.completedDate) {
+            const completedDate = requestCompletedDate(goal.completedDate);
+            if (completedDate === undefined || completedDate === null) {
+              e.target.value = goal.status;
+              return;
+            }
+            updateGoal(goal.id, { status: nextStatus, completedDate });
+          } else if (nextStatus !== 'completed' && goal.completedDate) {
+            updateGoal(goal.id, { status: nextStatus, completedDate: null });
+          } else {
+            updateGoal(goal.id, { status: nextStatus });
+          }
           onRefresh();
         },
         onClick: (e) => e.stopPropagation()

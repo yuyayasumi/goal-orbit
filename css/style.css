@@ -1229,25 +1229,18 @@ body {
   line-height: 1.5;
 }
 
-.date-picker-dropdowns {
-  display: flex;
-  align-items: stretch;
-  gap: 8px;
-  width: 100%;
-}
-
-.date-picker-dropdowns .date-select {
-  width: auto;
-  min-width: 0;
-  flex: 1 1 0;
-}
-
-.date-picker-dropdowns .date-select-year {
-  flex: 1.25 1 0;
-}
-
 input[type="date"].form-input {
   color-scheme: dark;
+}
+
+.form-date-input {
+  min-height: 44px;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.08em;
+}
+
+.form-date-input::placeholder {
+  letter-spacing: 0.08em;
 }
 
 select.form-input {
@@ -1258,16 +1251,6 @@ select.form-input {
   background-repeat: no-repeat;
   background-position: right 12px center;
   padding-right: 36px;
-}
-
-.date-select {
-  text-align: left;
-  font-variant-numeric: tabular-nums;
-}
-
-.date-select option {
-  color: var(--text-primary);
-  background: var(--bg-elevated);
 }
 
 select.form-input option {
@@ -1382,12 +1365,41 @@ select.form-input option {
 }
 
 /* === Monthly Review === */
+.review-sticky-header {
+  position: sticky;
+  top: -1px;
+  z-index: 20;
+  background: linear-gradient(180deg, var(--bg-primary) 0%, var(--bg-primary) 84%, rgba(10, 10, 15, 0) 100%);
+  padding-top: 4px;
+  margin-bottom: 20px;
+}
+
+.review-page-header {
+  margin-bottom: 14px;
+}
+
 .review-controls {
-  margin-bottom: 24px;
+  margin-bottom: 0;
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px 18px;
+  background: var(--surface-glass);
+  border: 1px solid var(--surface-glass-border);
+  border-radius: var(--radius-lg);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
 }
 
 .review-month-selector {
   max-width: 240px;
+}
+
+.review-autosave-status {
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+  white-space: nowrap;
 }
 
 .month-select {
@@ -1441,12 +1453,6 @@ select.form-input option {
 
 .review-textarea {
   min-height: 100px;
-}
-
-.review-actions {
-  display: flex;
-  justify-content: flex-end;
-  margin-top: 8px;
 }
 
 .past-reviews-section {
@@ -2037,7 +2043,7 @@ select.form-input option {
 .routines-list .compact-list-header,
 .routines-list .dashboard-compact-item {
   display: grid;
-  grid-template-columns: 12px 1fr 100px 110px 80px;
+  grid-template-columns: 12px minmax(160px, 1fr) 100px 110px 110px 88px 88px;
   align-items: center;
   gap: 12px;
   padding: 6px 12px;
@@ -2067,7 +2073,9 @@ select.form-input option {
 }
 
 .routines-list .header-col-status,
-.routines-list .header-col-priority {
+.routines-list .header-col-priority,
+.routines-list .header-col-start,
+.routines-list .header-col-end {
   justify-self: start;
 }
 
@@ -2075,7 +2083,7 @@ select.form-input option {
 .projects-list .compact-list-header,
 .projects-list .dashboard-compact-item {
   display: grid;
-  grid-template-columns: 12px 1fr 100px 130px 110px 80px;
+  grid-template-columns: 12px minmax(160px, 1fr) 110px 110px 110px 130px 88px 88px;
   align-items: center;
   gap: 12px;
   padding: 6px 12px;
@@ -2110,7 +2118,9 @@ select.form-input option {
 }
 
 .projects-list .header-col-status,
-.projects-list .header-col-priority {
+.projects-list .header-col-priority,
+.projects-list .header-col-start,
+.projects-list .header-col-end {
   justify-self: start;
 }
 
@@ -2190,11 +2200,15 @@ select.form-input option {
   font-size: 0.72rem;
   padding: 2px 4px;
   outline: none;
-  width: 115px;
+  width: 110px;
   cursor: pointer;
   font-family: inherit;
   color-scheme: dark;
   transition: all var(--transition-fast);
+}
+
+.dashboard-compact-item .inline-edit-date {
+  justify-self: start;
 }
 
 .inline-edit-date:hover {
@@ -2318,4 +2332,3 @@ select.form-input option {
 .widget-drag-handle:active {
   cursor: grabbing;
 }
-

@@ -4,7 +4,7 @@
 
 import { el, clearElement, PRIORITY_CONFIG, FREQUENCY_CONFIG, formatDate, getSubtaskProgress } from '../utils.js';
 import { t } from '../i18n.js';
-import { getArchivedGoals, unarchiveGoal, deleteGoal, getActiveAreas, getAreaById } from '../store.js';
+import { getArchivedGoals, unarchiveGoal, deleteGoal, getAllAreas, getAreaById, updateArea, deleteArea } from '../store.js';
 
 export function renderArchives(container, onRefresh) {
   clearElement(container);
@@ -28,10 +28,10 @@ export function renderArchives(container, onRefresh) {
     el('span', { className: 'filter-label' }, t('archives.areaFilter'))
   );
 
-  const activeAreas = getActiveAreas();
+  const allAreas = getAllAreas();
   const areaFilters = [
     { value: 'all', label: t('area.all') },
-    ...activeAreas.map(a => ({ value: a.id, label: a.name }))
+    ...allAreas.map(a => ({ value: a.id, label: a.name }))
   ];
 
   areaFilters.forEach(f => {
@@ -50,11 +50,42 @@ export function renderArchives(container, onRefresh) {
   container.appendChild(filterBar);
 
   // アーカイブリスト
+  const archivedAreasSection = el('div', { className: 'glass-card', style: 'margin-bottom: 16px;' });
+  container.appendChild(archivedAreasSection);
+
   const listContainer = el('div', { className: 'goals-grid' });
   container.appendChild(listContainer);
 
   function renderArchiveList() {
+    clearElement(archivedAreasSection);
     clearElement(listContainer);
+
+    const archivedAreas = getAllAreas()
+      .filter(area => area.archived)
+      .sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
+
+    archivedAreasSection.appendChild(
+      el('div', { className: 'card-header-flex', style: 'margin-bottom: 12px;' },
+        el('h2', { className: 'card-title', style: 'margin-bottom: 0;' },
+          el('i', { 'data-lucide': 'folder-archive' }),
+          el('span', {}, ' アーカイブ済みArea')
+        )
+      )
+    );
+
+    if (archivedAreas.length === 0) {
+      archivedAreasSection.appendChild(
+        el('div', { className: 'empty-state small' },
+          el('p', {}, 'アーカイブ済みのAreaはありません')
+        )
+      );
+    } else {
+      const archivedAreaList = el('div', { className: 'goals-grid' });
+      archivedAreas.forEach((area, index) => {
+        archivedAreaList.appendChild(createArchivedAreaCard(area, index, onRefresh));
+      });
+      archivedAreasSection.appendChild(archivedAreaList);
+    }
 
     let archived = getArchivedGoals();
     if (currentAreaFilter !== 'all') {
@@ -82,6 +113,66 @@ export function renderArchives(container, onRefresh) {
 
   renderArchiveList();
   if (window.lucide) window.lucide.createIcons();
+}
+
+function createArchivedAreaCard(area, index, onRefresh) {
+  const card = el('div', {
+    className: 'goal-card archived-card',
+    style: `animation-delay: ${index * 0.05}s; border-top: 3px solid ${area.color}`
+  });
+
+  const cardHeader = el('div', { className: 'goal-card-header' },
+    el('div', {
+      className: 'status-badge',
+      style: `color: ${area.color}; border-color: ${area.color}`
+    }, 'Area'),
+    el('div', { className: 'goal-card-actions' },
+      el('button', {
+        className: 'icon-btn',
+        title: '復元',
+        onClick: () => {
+          updateArea(area.id, { completedDate: null });
+          onRefresh();
+        }
+      },
+        el('i', { 'data-lucide': 'undo-2' })
+      ),
+      el('button', {
+        className: 'icon-btn',
+        title: '完全削除',
+        onClick: () => {
+          if (confirm(`「${area.name}」を完全に削除しますか？`)) {
+            deleteArea(area.id);
+            onRefresh();
+          }
+        }
+      },
+        el('i', { 'data-lucide': 'trash-2' })
+      )
+    )
+  );
+  card.appendChild(cardHeader);
+
+  card.appendChild(el('h3', { className: 'goal-card-title' }, area.name));
+
+  if (area.description) {
+    card.appendChild(el('p', { className: 'goal-card-desc' }, area.description));
+  }
+
+  card.appendChild(
+    el('div', { className: 'goal-card-meta' },
+      el('span', { className: 'goal-card-date' },
+        el('i', { 'data-lucide': 'calendar' }),
+        el('span', {}, `開始: ${area.startDate ? formatDate(area.startDate) : '-'}`)
+      ),
+      el('span', { className: 'goal-card-date' },
+        el('i', { 'data-lucide': 'clock' }),
+        el('span', {}, `完了: ${area.completedDate ? formatDate(area.completedDate) : '-'}`)
+      )
+    )
+  );
+
+  return card;
 }
 
 function createArchiveCard(goal, index, onRefresh) {

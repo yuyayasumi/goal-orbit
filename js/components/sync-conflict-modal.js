@@ -1,4 +1,4 @@
-import { el } from '../utils.js';
+import { el, registerEscapeClose } from '../utils.js';
 import { t, getLang } from '../i18n.js';
 
 export function openSyncConflictModal({ localModified, driveModified }) {
@@ -8,6 +8,7 @@ export function openSyncConflictModal({ localModified, driveModified }) {
     const finish = (choice) => {
       if (settled) return;
       settled = true;
+      removeEscapeClose?.();
       overlay.classList.remove('active');
       modal.classList.remove('active');
       setTimeout(() => overlay.remove(), 200);
@@ -58,6 +59,7 @@ export function openSyncConflictModal({ localModified, driveModified }) {
 
     overlay.appendChild(modal);
     document.body.appendChild(overlay);
+    const removeEscapeClose = registerEscapeClose(() => finish('cancel'));
     requestAnimationFrame(() => {
       overlay.classList.add('active');
       modal.classList.add('active');

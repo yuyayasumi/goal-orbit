@@ -2,12 +2,13 @@
 // Orbit v3 - 目標モーダルコンポーネント
 // ==========================================
 
-import { el, STATUS_CONFIG, PRIORITY_CONFIG, FREQUENCY_CONFIG, CATEGORY_CONFIG, generateId, createDatePicker } from '../utils.js';
+import { el, STATUS_CONFIG, PRIORITY_CONFIG, FREQUENCY_CONFIG, CATEGORY_CONFIG, generateId, createDatePicker, registerEscapeClose } from '../utils.js';
 import { t } from '../i18n.js';
 import { addGoal, updateGoal, getGoalById, getActiveAreas, canAddGoal } from '../store.js';
 import { openAreaModal } from './area-modal.js';
 
 let modalOverlay = null;
+let removeEscapeClose = null;
 
 export function openGoalModal(goalId, defaultArea = null, onSave = null) {
   closeGoalModal();
@@ -294,6 +295,7 @@ export function openGoalModal(goalId, defaultArea = null, onSave = null) {
   modal.appendChild(form);
   modalOverlay.appendChild(modal);
   document.body.appendChild(modalOverlay);
+  removeEscapeClose = registerEscapeClose(closeGoalModal);
 
   requestAnimationFrame(() => {
     modalOverlay.classList.add('active');
@@ -306,6 +308,8 @@ export function openGoalModal(goalId, defaultArea = null, onSave = null) {
 
 export function closeGoalModal() {
   if (modalOverlay) {
+    removeEscapeClose?.();
+    removeEscapeClose = null;
     modalOverlay.classList.remove('active');
     const modal = modalOverlay.querySelector('.modal');
     if (modal) modal.classList.remove('active');
@@ -360,6 +364,11 @@ function handleSubmit(form, isEdit, goalId, onSave, pickers = {}) {
     data.subtasks = [];
     data.frequency = null;
     data.frequencyCustom = null;
+  }
+
+  if (data.status === 'completed' && !data.completedDate) {
+    alert('完了ステータスにするには完了日を入力してください。');
+    return;
   }
 
   if (isEdit) {
