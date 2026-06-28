@@ -7,11 +7,14 @@ import { renderDashboard } from './components/dashboard.js';
 import { renderAreaPage } from './components/area-page.js';
 import { renderMonthlyReview } from './components/monthly-review.js';
 import { renderArchives } from './components/archives.js';
-import { migrateIfNeeded, getFullData, restoreFullData, getLastModified, initializeSampleDataIfNeeded } from './store.js';
+import { openSyncConflictModal } from './components/sync-conflict-modal.js';
+import { migrateIfNeeded, getFullData, restoreFullData, getLastModified, initializeSampleDataIfNeeded, hasLocalUserChanges, markDataSynced, saveRecoveryBackup } from './store.js';
 import { initDriveApi, isDriveAuthorized, downloadBackup, uploadBackup, findExistingBackupFile } from './services/drive-api.js';
 
 export const appState = { syncStatus: 'init' };
 let syncDebounceTimer = null;
+let syncReady = false;
+let startupSyncInProgress = false;
 
 let currentPage = 'dashboard';
 
@@ -39,41 +42,72 @@ function handleDriveStatusChange(status) {
   }
 }
 
+export function retryDriveSync() {
+  if (isDriveAuthorized()) performStartupSync();
+}
+
 async function performStartupSync() {
+  if (startupSyncInProgress) return;
+  startupSyncInProgress = true;
+  syncReady = false;
   appState.syncStatus = 'syncing';
   triggerSidebarRender();
 
   try {
     const backupMeta = await findExistingBackupFile();
     if (backupMeta) {
-      const driveModifiedStr = backupMeta.modifiedTime; 
-      const driveModified = new Date(driveModifiedStr).getTime();
-      const localModified = getLastModified();
+      const driveData = await downloadBackup();
+      if (!driveData) throw new Error('DRIVE_BACKUP_DOWNLOAD_FAILED');
 
-      // Give 5 seconds buffer for timestamp skew
-      if (driveModified > localModified + 5000) {
-        const data = await downloadBackup();
-        if (data) {
-          restoreFullData(data);
-          renderPage(); // Refresh UI
+      const localData = getFullData();
+      const localModified = getLastModified();
+      const driveModified = Number(driveData.lastModified) || new Date(backupMeta.modifiedTime).getTime();
+
+      if (dataSetsMatch(localData, driveData)) {
+        markDataSynced(localModified);
+      } else if (!hasLocalUserChanges()) {
+        restoreFullData(driveData);
+        renderPage();
+      } else {
+        const choice = await openSyncConflictModal({ localModified, driveModified });
+
+        if (choice === 'drive') {
+          saveRecoveryBackup(localData);
+          restoreFullData(driveData);
+          renderPage();
+        } else if (choice === 'local') {
+          const uploaded = await uploadBackup(localData);
+          if (!uploaded) throw new Error('DRIVE_BACKUP_UPLOAD_FAILED');
+          markDataSynced(localModified);
+        } else {
+          appState.syncStatus = 'conflict';
+          triggerSidebarRender();
+          return;
         }
-      } else if (localModified > driveModified + 5000) {
-        await uploadBackup(getFullData());
       }
     } else {
-      await uploadBackup(getFullData());
+      const localData = getFullData();
+      const uploaded = await uploadBackup(localData);
+      if (!uploaded) throw new Error('DRIVE_BACKUP_UPLOAD_FAILED');
+      markDataSynced(localData.lastModified);
+    }
+
+    syncReady = true;
+    appState.syncStatus = 'synced';
+    if (hasLocalUserChanges()) {
+      window.dispatchEvent(new Event('orbitDataChanged'));
     }
   } catch (err) {
     console.error('Startup sync failed', err);
     appState.syncStatus = 'error';
+  } finally {
+    startupSyncInProgress = false;
+    triggerSidebarRender();
   }
-  
-  if (appState.syncStatus === 'syncing') appState.syncStatus = 'synced';
-  triggerSidebarRender();
 }
 
 window.addEventListener('orbitDataChanged', () => {
-  if (!isDriveAuthorized()) return;
+  if (!isDriveAuthorized() || !syncReady) return;
   
   appState.syncStatus = 'syncing';
   triggerSidebarRender();
@@ -81,7 +115,10 @@ window.addEventListener('orbitDataChanged', () => {
   clearTimeout(syncDebounceTimer);
   syncDebounceTimer = setTimeout(async () => {
     try {
-      await uploadBackup(getFullData());
+      const localData = getFullData();
+      const uploaded = await uploadBackup(localData);
+      if (!uploaded) throw new Error('DRIVE_BACKUP_UPLOAD_FAILED');
+      markDataSynced(localData.lastModified);
     } catch(err) {
       console.error(err);
       appState.syncStatus = 'error';
@@ -89,6 +126,17 @@ window.addEventListener('orbitDataChanged', () => {
     }
   }, 5000); // 5 seconds debounce
 });
+
+function dataSetsMatch(localData, driveData) {
+  const comparable = data => ({
+    areas: data.areas || [],
+    goals: data.goals || [],
+    reviews: data.reviews || [],
+    language: data.language || 'ja',
+    dashboardLayout: data.dashboardLayout || []
+  });
+  return JSON.stringify(comparable(localData)) === JSON.stringify(comparable(driveData));
+}
 
 function renderPage() {
   const refreshCurrentPage = () => navigateTo(currentPage);

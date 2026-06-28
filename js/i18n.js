@@ -172,6 +172,14 @@ const translations = {
     'limit.areaReached': '無料版ではAreaは4件までです。',
     'limit.goalReached': '無料版では{0}は4件までです。',
     'limit.unlockHint': '買い切りキーを入力すると上限を解除できます。',
+    'syncConflict.title': '同期するデータを選択',
+    'syncConflict.description': 'このブラウザとGoogleドライブの両方に異なるデータがあります。自動では上書きしません。使用するデータを選んでください。',
+    'syncConflict.localUpdated': 'このブラウザ',
+    'syncConflict.driveUpdated': 'Googleドライブ',
+    'syncConflict.note': 'Googleドライブを選んだ場合も、現在のローカルデータは復旧用としてブラウザ内に保管されます。',
+    'syncConflict.cancel': '同期を保留',
+    'syncConflict.useLocal': 'このブラウザを使用',
+    'syncConflict.useDrive': 'Googleドライブを使用',
 
     // Month
     'month.format': '{0}年{1}月',
@@ -330,6 +338,14 @@ const translations = {
     'limit.areaReached': 'The free plan allows up to 4 Areas.',
     'limit.goalReached': 'The free plan allows up to 4 {0}.',
     'limit.unlockHint': 'Enter a one-time purchase key to unlock the limit.',
+    'syncConflict.title': 'Choose which data to sync',
+    'syncConflict.description': 'This browser and Google Drive contain different data. Orbit will not overwrite either automatically. Choose which data to use.',
+    'syncConflict.localUpdated': 'This browser',
+    'syncConflict.driveUpdated': 'Google Drive',
+    'syncConflict.note': 'If you choose Google Drive, the current local data will still be kept in this browser as a recovery copy.',
+    'syncConflict.cancel': 'Sync later',
+    'syncConflict.useLocal': 'Use this browser',
+    'syncConflict.useDrive': 'Use Google Drive',
 
     'month.format': '{1}/{0}',
   }

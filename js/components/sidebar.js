@@ -6,7 +6,7 @@ import { el } from '../utils.js';
 import { t, toggleLang, getLang } from '../i18n.js';
 import { exportData, importData, getActiveAreas } from '../store.js';
 import { openAreaModal } from './area-modal.js';
-import { appState } from '../app.js';
+import { appState, retryDriveSync } from '../app.js';
 import { handleAuthClick, handleSignoutClick, isDriveAuthorized, getUserInfo } from '../services/drive-api.js';
 
 export function renderSidebar(container, currentPage, onNavigate) {
@@ -73,6 +73,10 @@ export function renderSidebar(container, currentPage, onNavigate) {
       statusText = 'Sync Error';
       statusIcon = 'alert-circle';
       statusColor = '#EF4444';
+    } else if (appState.syncStatus === 'conflict') {
+      statusText = 'Sync Paused';
+      statusIcon = 'pause-circle';
+      statusColor = '#F59E0B';
     }
     
     const indicator = el('div', { style: `display: flex; align-items: center; gap: 6px; font-size: 12px; color: ${statusColor};` },
@@ -80,14 +84,14 @@ export function renderSidebar(container, currentPage, onNavigate) {
       el('span', {}, statusText)
     );
     
-    const logoutBtn = el('button', {
+    const actionBtn = el('button', {
       style: 'background: none; border: none; font-size: 11px; color: var(--text-tertiary); cursor: pointer; text-decoration: underline;',
-      onClick: handleSignoutClick
-    }, 'Disconnect');
+      onClick: appState.syncStatus === 'conflict' ? retryDriveSync : handleSignoutClick
+    }, appState.syncStatus === 'conflict' ? 'Choose' : 'Disconnect');
     
     if (userRow) syncSection.appendChild(userRow);
     statusRow.appendChild(indicator);
-    statusRow.appendChild(logoutBtn);
+    statusRow.appendChild(actionBtn);
     syncSection.appendChild(statusRow);
   }
 
@@ -311,4 +315,3 @@ function showToast(message) {
   }, 2500);
   if (window.lucide) window.lucide.createIcons();
 }
-

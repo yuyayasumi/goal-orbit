@@ -10,6 +10,8 @@ const REVIEWS_KEY = 'orbit_reviews';
 const VERSION_KEY = 'orbit_version';
 const LAST_MODIFIED_KEY = 'orbit_last_modified';
 const DASHBOARD_LAYOUT_KEY = 'orbit_dashboard_layout';
+const LOCAL_USER_CHANGES_KEY = 'orbit_local_user_changes';
+const RECOVERY_BACKUP_KEY = 'orbit_recovery_backup';
 const FREE_ITEM_LIMIT = 4;
 const PREMIUM_UNLOCK_KEY = 'orbit_premium_unlocked';
 
@@ -22,14 +24,36 @@ function loadData(key) {
   } catch { return []; }
 }
 
-function saveData(key, data) {
+function saveData(key, data, { userChange = true } = {}) {
   localStorage.setItem(key, JSON.stringify(data));
   localStorage.setItem(LAST_MODIFIED_KEY, Date.now().toString());
+  if (userChange) localStorage.setItem(LOCAL_USER_CHANGES_KEY, 'true');
   window.dispatchEvent(new Event('orbitDataChanged'));
 }
 
 export function getLastModified() {
   return parseInt(localStorage.getItem(LAST_MODIFIED_KEY) || '0', 10);
+}
+
+export function hasLocalUserChanges() {
+  const marker = localStorage.getItem(LOCAL_USER_CHANGES_KEY);
+  if (marker !== null) return marker === 'true';
+
+  // Existing installations predate the marker, so treat their data as valuable.
+  return getLastModified() > 0 && localStorage.getItem(AREAS_KEY) !== null;
+}
+
+export function markDataSynced(expectedModified = null) {
+  if (expectedModified !== null && getLastModified() !== expectedModified) return false;
+  localStorage.setItem(LOCAL_USER_CHANGES_KEY, 'false');
+  return true;
+}
+
+export function saveRecoveryBackup(data) {
+  localStorage.setItem(RECOVERY_BACKUP_KEY, JSON.stringify({
+    savedAt: new Date().toISOString(),
+    data
+  }));
 }
 
 export function isPremiumUnlocked() {
@@ -492,6 +516,7 @@ export function restoreFullData(data) {
     localStorage.setItem(LAST_MODIFIED_KEY, Date.now().toString());
   }
   localStorage.setItem(VERSION_KEY, '3.1');
+  localStorage.setItem(LOCAL_USER_CHANGES_KEY, 'false');
 }
 
 export function initializeSampleDataIfNeeded() {
@@ -626,6 +651,7 @@ export function initializeSampleDataIfNeeded() {
     }
   ];
 
-  saveData(AREAS_KEY, sampleAreas);
-  saveData(GOALS_KEY, sampleGoals);
+  saveData(AREAS_KEY, sampleAreas, { userChange: false });
+  saveData(GOALS_KEY, sampleGoals, { userChange: false });
+  localStorage.setItem(LOCAL_USER_CHANGES_KEY, 'false');
 }

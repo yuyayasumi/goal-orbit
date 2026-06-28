@@ -2,10 +2,14 @@
 // Orbit v3 - Google Drive API Service
 // ==========================================
 
-const CLIENT_ID = '956745256349-11j7i1lr1o2kaij1nekto7nje29v2aam.apps.googleusercontent.com';
+import { ORBIT_CONFIG } from '../config.js';
+
+const CLIENT_ID = ORBIT_CONFIG.googleClientId;
 const DISCOVERY_DOC = 'https://www.googleapis.com/discovery/v1/apis/drive/v3/rest';
 const SCOPES = 'https://www.googleapis.com/auth/drive.file email profile';
 const BACKUP_FILENAME = 'orbit-cloud-backup.json';
+const AUTH_SESSION_KEY = 'orbit_google_auth_session';
+const AUTO_LOGIN_KEY = 'orbit_google_auto_login';
 
 let tokenClient;
 let gapiInited = false;
@@ -14,6 +18,49 @@ let isAuthorized = false;
 let currentFileId = null;
 let statusCallback = null;
 let currentUserInfo = null;
+let readyHandled = false;
+
+function saveAuthSession(tokenResponse) {
+  const expiresIn = Number(tokenResponse.expires_in || 3600);
+  const session = {
+    access_token: tokenResponse.access_token,
+    token_type: tokenResponse.token_type || 'Bearer',
+    scope: tokenResponse.scope || SCOPES,
+    expires_at: Date.now() + (expiresIn * 1000)
+  };
+  sessionStorage.setItem(AUTH_SESSION_KEY, JSON.stringify(session));
+  localStorage.setItem(AUTO_LOGIN_KEY, 'true');
+}
+
+function restoreAuthSession() {
+  try {
+    const raw = sessionStorage.getItem(AUTH_SESSION_KEY);
+    if (!raw) return false;
+
+    const session = JSON.parse(raw);
+    if (!session.access_token || session.expires_at <= Date.now() + 60000) {
+      sessionStorage.removeItem(AUTH_SESSION_KEY);
+      return false;
+    }
+
+    gapi.client.setToken({ access_token: session.access_token });
+    isAuthorized = true;
+    return true;
+  } catch {
+    sessionStorage.removeItem(AUTH_SESSION_KEY);
+    return false;
+  }
+}
+
+async function finishAuthorization(tokenResponse = null) {
+  if (tokenResponse) {
+    gapi.client.setToken(tokenResponse);
+    saveAuthSession(tokenResponse);
+  }
+  isAuthorized = true;
+  await fetchUserInfo();
+  updateStatus('authorized');
+}
 
 export async function fetchUserInfo() {
   if (!isAuthorized) return null;
@@ -70,22 +117,33 @@ function initializeGisClient() {
     scope: SCOPES,
     callback: async (resp) => {
       if (resp.error !== undefined) {
-        throw (resp);
+        updateStatus('ready');
+        return;
       }
-      isAuthorized = true;
-      await fetchUserInfo();
-      updateStatus('authorized');
-      await findExistingBackupFile();
+      await finishAuthorization(resp);
     },
+    error_callback: () => updateStatus('ready'),
   });
   gisInited = true;
   checkIfReady();
 }
 
-function checkIfReady() {
-  if (gapiInited && gisInited) {
-    updateStatus('ready'); // Ready to log in
+async function checkIfReady() {
+  if (!gapiInited || !gisInited || readyHandled) return;
+  readyHandled = true;
+
+  if (restoreAuthSession()) {
+    await finishAuthorization();
+    return;
   }
+
+  if (localStorage.getItem(AUTO_LOGIN_KEY) === 'true') {
+    // Reuse the user's existing Google grant when the browser permits it.
+    tokenClient.requestAccessToken({ prompt: '' });
+    return;
+  }
+
+  updateStatus('ready');
 }
 
 function updateStatus(status) {
@@ -108,6 +166,8 @@ export function handleSignoutClick() {
     isAuthorized = false;
     currentFileId = null;
     currentUserInfo = null;
+    sessionStorage.removeItem(AUTH_SESSION_KEY);
+    localStorage.removeItem(AUTO_LOGIN_KEY);
     updateStatus('ready');
   }
 }
@@ -129,7 +189,7 @@ export async function findExistingBackupFile() {
     }
   } catch (err) {
     console.error('Error finding backup file', err);
-    return null;
+    throw err;
   }
 }
 
@@ -148,7 +208,7 @@ export async function downloadBackup() {
 }
 
 export async function uploadBackup(jsonData) {
-  if (!isAuthorized) return;
+  if (!isAuthorized) return false;
   updateStatus('syncing');
 
   const fileMetadata = {
@@ -168,9 +228,11 @@ export async function uploadBackup(jsonData) {
       await createFile(fileMetadata, file);
     }
     updateStatus('synced');
+    return true;
   } catch (err) {
     console.error('Error uploading backup', err);
     updateStatus('error');
+    return false;
   }
 }
 
@@ -188,7 +250,9 @@ async function createFile(metadata, fileBlob) {
     },
     body: form,
   });
+  if (!res.ok) throw new Error(`Drive create failed: ${res.status}`);
   const data = await res.json();
+  if (!data.id) throw new Error('Drive create failed: missing file ID');
   currentFileId = data.id;
 }
 
@@ -198,13 +262,14 @@ async function updateFile(fileId, metadata, fileBlob) {
   form.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }));
   form.append('file', fileBlob);
 
-  await fetch(`https://www.googleapis.com/upload/drive/v3/files/${fileId}?uploadType=multipart`, {
+  const res = await fetch(`https://www.googleapis.com/upload/drive/v3/files/${fileId}?uploadType=multipart`, {
     method: 'PATCH',
     headers: {
       Authorization: `Bearer ${accessToken}`,
     },
     body: form,
   });
+  if (!res.ok) throw new Error(`Drive update failed: ${res.status}`);
 }
 
 export function isDriveAuthorized() {
